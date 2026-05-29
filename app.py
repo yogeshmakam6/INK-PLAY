@@ -46,7 +46,6 @@ def send_otp_email(to_email, otp, purpose="registration"):
 MAX_REVISIONS = 30
 
 def get_db_connection():
-    # Hardcoded string to bypass the Streamlit Secrets UI
     return psycopg2.connect("postgresql://postgres:timemachine%401234@db.aguusrkanixbqxkymfyu.supabase.co:5432/postgres?sslmode=require")
 
 def init_db():
