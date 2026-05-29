@@ -1,0 +1,4 @@
+streamlit
+bcrypt
+reportlab
+psycopg2-binary
