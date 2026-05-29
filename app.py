@@ -46,8 +46,8 @@ def send_otp_email(to_email, otp, purpose="registration"):
 MAX_REVISIONS = 30
 
 def get_db_connection():
-    """Securely connects to Supabase using your secrets.toml file"""
-    return psycopg2.connect(st.secrets["DB_URL"])
+    # Hardcoded string to bypass the Streamlit Secrets UI
+    return psycopg2.connect("postgresql://postgres:timemachine%401234@db.aguusrkanixbqxkymfyu.supabase.co:5432/postgres?sslmode=require")
 
 def init_db():
     """Initialize the Cloud Database and create tables if they don't exist."""
