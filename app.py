@@ -46,9 +46,7 @@ def send_otp_email(to_email, otp, purpose="registration"):
 MAX_REVISIONS = 30
 
 def get_db_connection():
-    s = st.secrets["postgres"]
-    conn_str = f"postgresql://{s['user']}:{s['password']}@{s['host']}:{s['port']}/{s['dbname']}?sslmode={s['sslmode']}"
-    return psycopg2.connect(conn_str)
+    return psycopg2.connect("postgresql://postgres:timemachine123456789009@143.198.243.201:6543/postgres?sslmode=require")
     
 def init_db():
     """Initialize the Cloud Database and create tables if they don't exist."""
