@@ -47,14 +47,9 @@ MAX_REVISIONS = 30
 
 def get_db_connection():
     s = st.secrets["postgres"]
-    return psycopg2.connect(
-        host=s["host"],
-        port=s["port"],
-        dbname=s["dbname"],
-        user=s["user"],
-        password=s["password"],
-        sslmode=s["sslmode"]
-    )
+    conn_str = f"postgresql://{s['user']}:{s['password']}@{s['host']}:{s['port']}/{s['dbname']}?sslmode={s['sslmode']}"
+    return psycopg2.connect(conn_str)
+    
 def init_db():
     """Initialize the Cloud Database and create tables if they don't exist."""
     conn = get_db_connection()
