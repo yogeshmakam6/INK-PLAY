@@ -45,12 +45,16 @@ def send_otp_email(to_email, otp, purpose="registration"):
 # ─────────────────────────────────────────────────────────────────────────────
 MAX_REVISIONS = 30
 
-import streamlit as st
-import psycopg2
-
 def get_db_connection():
-    return psycopg2.connect(**st.secrets["postgres"])
-
+    s = st.secrets["postgres"]
+    return psycopg2.connect(
+        host=s["host"],
+        port=s["port"],
+        dbname=s["dbname"],
+        user=s["user"],
+        password=s["password"],
+        sslmode=s["sslmode"]
+    )
 def init_db():
     """Initialize the Cloud Database and create tables if they don't exist."""
     conn = get_db_connection()
