@@ -5,7 +5,7 @@ import os
 import io
 import smtplib
 import random
-import psycopg2 # <--- The new Cloud Database Connector!
+import psycopg2 
 from email.mime.text import MIMEText
 from datetime import datetime
 from reportlab.lib.pagesizes import letter
@@ -543,14 +543,23 @@ section.main > div {{ display: flex !important; align-items: center !important; 
                 st.rerun()
         with col2:
             if st.button("VERIFY", use_container_width=True):
-                if user_otp.strip() == st.session_state.reg_data.get("otp"):
+                # Pull directly from Streamlit's deep memory
+                entered_otp = str(st.session_state.reg_otp).strip()
+                real_otp = str(st.session_state.reg_data.get("otp")).strip()
+                
+                if entered_otp == real_otp:
                     d = st.session_state.reg_data
                     ok, msg = register_user(d["user"], d["email"], d["pw"])
                     if ok:
+                        # THE FIX: Auto-log the user in and teleport to the dashboard!
+                        st.session_state.logged_in = True
+                        st.session_state.username = d["user"]
+                        st.session_state.page = "dashboard"
+                        
+                        # Clean up the background data
                         st.session_state.reg_step = 1
                         st.session_state.reg_data = {}
-                        st.session_state.msg = "Account created — please log in."
-                        st.session_state.auth_mode_radio = "Login"
+                        st.session_state.msg = ""
                     else:
                         st.session_state.msg = msg
                 else:
@@ -1014,9 +1023,13 @@ def page_settings():
                 st.rerun()
         with col2:
             if st.button("UPDATE PASSWORD", use_container_width=True, key="s_pw_btn"):
-                if not pw_otp or not new_pw or not new_pw2: 
+                # Pull directly from Streamlit's deep memory
+                entered_otp = str(st.session_state.s_pw_otp).strip()
+                real_otp = str(st.session_state.pw_data.get("otp")).strip()
+                
+                if not entered_otp or not new_pw or not new_pw2: 
                     st.session_state.pw_msg = ("Please fill in all fields.", "err")
-                elif pw_otp.strip() != st.session_state.pw_data.get("otp"):
+                elif entered_otp != real_otp:
                     st.session_state.pw_msg = ("Invalid OTP.", "err")
                 elif new_pw != new_pw2: 
                     st.session_state.pw_msg = ("New passwords do not match.", "err")
