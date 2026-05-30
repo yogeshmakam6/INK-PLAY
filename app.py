@@ -46,8 +46,9 @@ def send_otp_email(to_email, otp, purpose="registration"):
 MAX_REVISIONS = 30
 
 def get_db_connection():
-    return psycopg2.connect("postgresql://postgres:timemachine123456789009@143.198.243.201:6543/postgres?sslmode=require")
-    
+    """Securely connects to Supabase using your secrets.toml file"""
+    return psycopg2.connect(st.secrets["DB_URL"])
+
 def init_db():
     """Initialize the Cloud Database and create tables if they don't exist."""
     conn = get_db_connection()
