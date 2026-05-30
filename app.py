@@ -49,6 +49,8 @@ def get_db_connection():
     """Securely connects to Supabase using your secrets.toml file"""
     return psycopg2.connect(st.secrets["DB_URL"])
 
+# THE SPEED FIX: This tag forces Streamlit to only run this setup function ONCE!
+@st.cache_resource
 def init_db():
     """Initialize the Cloud Database and create tables if they don't exist."""
     conn = get_db_connection()
@@ -83,9 +85,7 @@ def init_db():
     ''')
     conn.commit()
     conn.close()
-
-# Run the initialization to ensure tables exist in the cloud
-init_db()
+    return True
 
 # ─────────────────────────────────────────────────────────────────────────────
 # AUTH & USER MANAGEMENT
