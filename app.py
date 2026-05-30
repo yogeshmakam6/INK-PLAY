@@ -72,6 +72,15 @@ def check_user_exists(username):
     conn.close()
     return exists
 
+# NEW: Prevents multiple accounts with the same email
+def check_email_exists(email):
+    conn = get_db_connection()
+    c = conn.cursor()
+    c.execute("SELECT 1 FROM users WHERE email=%s", (email,))
+    exists = c.fetchone() is not None
+    conn.close()
+    return exists
+
 def register_user(username, email, password):
     if check_user_exists(username):
         return False, "Username already taken."
@@ -351,7 +360,7 @@ def global_css(dark):
 
 
 # ─────────────────────────────────────────────────────────────────────────────
-# AUTH PAGE (REWRITTEN WITH BULLETPROOF FORMS)
+# AUTH PAGE
 # ─────────────────────────────────────────────────────────────────────────────
 def page_auth():
     dark = st.session_state.dark_mode
@@ -369,7 +378,6 @@ def page_auth():
     </div>
     """, unsafe_allow_html=True)
 
-    # Display error/success messages
     if st.session_state.msg:
         st.markdown(f"<p style='font-size:11px;letter-spacing:.1em; color:#ff4444; font-weight:bold; text-align:center; margin:0 0 10px 0;'>{st.session_state.msg}</p>", unsafe_allow_html=True)
 
@@ -384,7 +392,6 @@ def page_auth():
             if submit_verify:
                 try:
                     d = st.session_state.reg_data
-                    # Force DB Registration
                     ok, msg = register_user(d["user"], d["email"], d["pw"])
                     if ok or "taken" in msg:
                         st.session_state.logged_in = True
@@ -407,7 +414,7 @@ def page_auth():
             st.rerun()
         
         st.markdown("<div style='height: 20px'></div>", unsafe_allow_html=True)
-        if st.button("🚨 EMERGENCY BYPASS: ENTER APP 🚨", use_container_width=True):
+        if st.button("🚨 EMERGENCY BYPASS 🚨", use_container_width=True):
             st.session_state.logged_in = True
             st.session_state.username = "TEST_USER"
             st.session_state.page = "dashboard"
@@ -462,6 +469,14 @@ def page_auth():
                     st.session_state.msg = "Password must be 6+ characters."
                     st.rerun()
 
+                # THE DUPLICATE BLOCKERS
+                if check_user_exists(u):
+                    st.session_state.msg = "Username already taken."
+                    st.rerun()
+                if check_email_exists(e):
+                    st.session_state.msg = "Email already registered. Please log in."
+                    st.rerun()
+
                 st.session_state.msg = "Sending OTP... Please wait."
                 generated_otp = str(random.randint(100000, 999999))
                 
@@ -476,12 +491,11 @@ def page_auth():
                 
     if mode == "Login":
         st.markdown("<div style='height: 20px'></div>", unsafe_allow_html=True)
-        if st.button("🚨 EMERGENCY BYPASS: ENTER APP 🚨", use_container_width=True):
+        if st.button("🚨 EMERGENCY BYPASS 🚨", use_container_width=True):
             st.session_state.logged_in = True
             st.session_state.username = "TEST_USER"
             st.session_state.page = "dashboard"
             st.rerun()
-
 
 # ─────────────────────────────────────────────────────────────────────────────
 # DASHBOARD PAGE
@@ -719,7 +733,7 @@ def page_app():
 
 
 # ─────────────────────────────────────────────────────────────────────────────
-# SETTINGS PAGE (REWRITTEN WITH FORMS)
+# SETTINGS PAGE
 # ─────────────────────────────────────────────────────────────────────────────
 def page_settings():
     dark     = st.session_state.dark_mode
@@ -764,6 +778,7 @@ def page_settings():
                 if not user_email:
                     st.session_state.pw_msg = ("No email registered. Cannot reset via OTP.", "err")
                 else:
+                    st.session_state.pw_msg = ("Sending OTP... Please wait.", "ok")
                     generated_otp = str(random.randint(100000, 999999))
                     success, err_msg = send_otp_email(user_email, generated_otp, "password")
                     if success:
