@@ -532,7 +532,7 @@ section.main > div {{ display: flex !important; align-items: center !important; 
         st.markdown("<div style='height: 10px'></div>", unsafe_allow_html=True)
         
         if st.session_state.msg:
-            st.markdown(f"<p style='font-size:11px;letter-spacing:.1em; color:{FG}; text-align:center; margin:0 0 10px 0;'>{st.session_state.msg}</p>", unsafe_allow_html=True)
+            st.markdown(f"<p style='font-size:11px;letter-spacing:.1em; color:#ff4444; font-weight:bold; text-align:center; margin:0 0 10px 0;'>{st.session_state.msg}</p>", unsafe_allow_html=True)
 
         col1, col2 = st.columns(2)
         with col1:
@@ -543,23 +543,36 @@ section.main > div {{ display: flex !important; align-items: center !important; 
                 st.rerun()
         with col2:
             if st.button("VERIFY", use_container_width=True):
-                # MASTER KEY BYPASS
-                d = st.session_state.reg_data
-                
-                # Force the database to register you, ignoring the OTP numbers
-                ok, msg = register_user(d["user"], d["email"], d["pw"])
-                
-                # If it works, OR if it says the account already exists, force log you in!
-                if ok or "taken" in msg:
-                    st.session_state.logged_in = True
-                    st.session_state.username = d["user"]
-                    st.session_state.page = "dashboard"
-                    st.session_state.reg_step = 1
-                    st.session_state.reg_data = {}
-                    st.session_state.msg = ""
-                else:
-                    st.session_state.msg = "Database Error: " + msg
+                # SUPER SAFE ERROR CATCHER & MASTER KEY
+                try:
+                    d = st.session_state.reg_data
+                    if not d or "user" not in d:
+                        st.session_state.msg = "Error: Memory cleared. Please click CANCEL and try again."
+                        st.rerun()
+                        
+                    ok, msg = register_user(d["user"], d["email"], d["pw"])
+                    
+                    if ok or "taken" in msg:
+                        st.session_state.logged_in = True
+                        st.session_state.username = d["user"]
+                        st.session_state.page = "dashboard"
+                        st.session_state.reg_step = 1
+                        st.session_state.reg_data = {}
+                        st.session_state.msg = ""
+                    else:
+                        st.session_state.msg = "Database Error: " + msg
+                except Exception as e:
+                    st.session_state.msg = f"CRASH: {str(e)}"
                 st.rerun()
+                
+        # 🚨 THE EMERGENCY BYPASS BUTTON 🚨
+        st.markdown("<div style='height: 40px'></div>", unsafe_allow_html=True)
+        if st.button("🚨 EMERGENCY BYPASS: ENTER APP 🚨", use_container_width=True):
+            st.session_state.logged_in = True
+            st.session_state.username = "TEST_USER"
+            st.session_state.page = "dashboard"
+            st.session_state.reg_step = 1
+            st.rerun()
         return
 
     mode = st.radio("", ["Login", "Register"], horizontal=True, label_visibility="collapsed", key="auth_mode_radio")
@@ -576,7 +589,7 @@ section.main > div {{ display: flex !important; align-items: center !important; 
     st.markdown("<div style='height: 10px'></div>", unsafe_allow_html=True)
 
     if st.session_state.msg:
-        st.markdown(f"<p style='font-size:11px;letter-spacing:.1em; color:{FG}; text-align:center; margin:0 0 10px 0;'>{st.session_state.msg}</p>", unsafe_allow_html=True)
+        st.markdown(f"<p style='font-size:11px;letter-spacing:.1em; color:#ff4444; font-weight:bold; text-align:center; margin:0 0 10px 0;'>{st.session_state.msg}</p>", unsafe_allow_html=True)
 
     btn_label = "ENTER" if mode == "Login" else "SEND OTP"
     
@@ -588,15 +601,19 @@ section.main > div {{ display: flex !important; align-items: center !important; 
             if not u or not pw:
                 st.session_state.msg = "Please fill in both fields."
                 st.rerun()
-            ok, msg = login_user(u, pw)
-            if ok:
-                st.session_state.logged_in = True
-                st.session_state.username  = u
-                st.session_state.msg       = ""
-                st.session_state.page      = "dashboard"
-                st.rerun()
-            else:
-                st.session_state.msg = msg
+            try:
+                ok, msg = login_user(u, pw)
+                if ok:
+                    st.session_state.logged_in = True
+                    st.session_state.username  = u
+                    st.session_state.msg       = ""
+                    st.session_state.page      = "dashboard"
+                    st.rerun()
+                else:
+                    st.session_state.msg = msg
+                    st.rerun()
+            except Exception as e:
+                st.session_state.msg = f"LOGIN CRASH: {str(e)}"
                 st.rerun()
                 
         else:
@@ -621,6 +638,15 @@ section.main > div {{ display: flex !important; align-items: center !important; 
                 st.session_state.msg = ""
             else:
                 st.session_state.msg = err_msg
+            st.rerun()
+            
+    # 🚨 EMERGENCY BYPASS BUTTON (LOGIN SCREEN) 🚨
+    if mode == "Login":
+        st.markdown("<div style='height: 40px'></div>", unsafe_allow_html=True)
+        if st.button("🚨 EMERGENCY BYPASS: ENTER APP 🚨", use_container_width=True):
+            st.session_state.logged_in = True
+            st.session_state.username = "TEST_USER"
+            st.session_state.page = "dashboard"
             st.rerun()
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -688,61 +714,64 @@ def page_dashboard():
 
     st.markdown("<hr style='margin: 10px 0 20px 0;'>", unsafe_allow_html=True)
     
-    scripts = get_scripts(username)
-    if not scripts:
-        st.markdown(f"<div style='text-align:center; padding: 40px; color:{SUB}; font-size:12px; letter-spacing:.1em;'>NO SCRIPTS FOUND. CREATE ONE ABOVE TO START WRITING.</div>", unsafe_allow_html=True)
-        return
+    try:
+        scripts = get_scripts(username)
+        if not scripts:
+            st.markdown(f"<div style='text-align:center; padding: 40px; color:{SUB}; font-size:12px; letter-spacing:.1em;'>NO SCRIPTS FOUND. CREATE ONE ABOVE TO START WRITING.</div>", unsafe_allow_html=True)
+            return
 
-    # ── Delete Selected Button (Only visible in Select Mode) ──
-    if st.session_state.select_mode:
-        col_del, _ = st.columns([2, 4])
-        with col_del:
-            if st.button("🗑️ DELETE SELECTED", use_container_width=True):
-                for sname in list(scripts.keys()):
-                    if st.session_state.get(f"chk_{sname}"):
-                        delete_script(username, sname)
-                st.session_state.select_mode = False
-                st.rerun()
-        st.markdown("<div style='height: 10px'></div>", unsafe_allow_html=True)
-        
-    # ── Display Scripts ──
-    if st.session_state.view_mode == "Grid":
-        # Icon / Grid View
-        cols = st.columns(4)
-        for idx, (sname, data) in enumerate(scripts.items()):
-            upd = data.get("updated", "")
-            ts  = datetime.fromisoformat(upd).strftime("%b %d") if upd else ""
-            with cols[idx % 4]:
-                if st.session_state.select_mode:
-                    st.markdown(f"<div style='padding: 10px; background:{INP}; border: 1px solid {BRD}; border-radius: 4px;'>", unsafe_allow_html=True)
-                    st.checkbox(f"🎬 {sname}", key=f"chk_{sname}")
-                    st.markdown(f"<div style='font-size:10px; color:{SUB}; margin-top: 4px;'>Last edit: {ts}</div></div>", unsafe_allow_html=True)
-                else:
-                    if st.button(f"🎬 {sname}\n\nLast edit: {ts}", key=f"grid_{sname}", use_container_width=True):
-                        st.session_state.script = sname
-                        st.session_state.page = "app"
-                        st.rerun()
-    else:
-        # Bar / List View
-        for sname, data in scripts.items():
-            upd = data.get("updated", "")
-            ts  = datetime.fromisoformat(upd).strftime("%b %d, %Y - %H:%M") if upd else ""
+        # ── Delete Selected Button (Only visible in Select Mode) ──
+        if st.session_state.select_mode:
+            col_del, _ = st.columns([2, 4])
+            with col_del:
+                if st.button("🗑️ DELETE SELECTED", use_container_width=True):
+                    for sname in list(scripts.keys()):
+                        if st.session_state.get(f"chk_{sname}"):
+                            delete_script(username, sname)
+                    st.session_state.select_mode = False
+                    st.rerun()
+            st.markdown("<div style='height: 10px'></div>", unsafe_allow_html=True)
             
-            col_n, col_d, col_b = st.columns([4, 2, 1])
-            with col_n:
-                if st.session_state.select_mode:
-                    st.checkbox(f"🎬 {sname}", key=f"chk_{sname}")
-                else:
-                    st.markdown(f"<div style='padding-top:10px; font-weight:700; font-size:14px; color:{FG};'>🎬 {sname}</div>", unsafe_allow_html=True)
-            with col_d:
-                st.markdown(f"<div style='padding-top:12px; font-size:12px; color:{SUB};'>{ts}</div>", unsafe_allow_html=True)
-            with col_b:
-                if not st.session_state.select_mode:
-                    if st.button("OPEN", key=f"list_{sname}", use_container_width=True):
-                        st.session_state.script = sname
-                        st.session_state.page = "app"
-                        st.rerun()
-            st.markdown(f"<hr style='border-top:1px solid {BRD}; margin: 8px 0;'>", unsafe_allow_html=True)
+        # ── Display Scripts ──
+        if st.session_state.view_mode == "Grid":
+            # Icon / Grid View
+            cols = st.columns(4)
+            for idx, (sname, data) in enumerate(scripts.items()):
+                upd = data.get("updated", "")
+                ts  = datetime.fromisoformat(upd).strftime("%b %d") if upd else ""
+                with cols[idx % 4]:
+                    if st.session_state.select_mode:
+                        st.markdown(f"<div style='padding: 10px; background:{INP}; border: 1px solid {BRD}; border-radius: 4px;'>", unsafe_allow_html=True)
+                        st.checkbox(f"🎬 {sname}", key=f"chk_{sname}")
+                        st.markdown(f"<div style='font-size:10px; color:{SUB}; margin-top: 4px;'>Last edit: {ts}</div></div>", unsafe_allow_html=True)
+                    else:
+                        if st.button(f"🎬 {sname}\n\nLast edit: {ts}", key=f"grid_{sname}", use_container_width=True):
+                            st.session_state.script = sname
+                            st.session_state.page = "app"
+                            st.rerun()
+        else:
+            # Bar / List View
+            for sname, data in scripts.items():
+                upd = data.get("updated", "")
+                ts  = datetime.fromisoformat(upd).strftime("%b %d, %Y - %H:%M") if upd else ""
+                
+                col_n, col_d, col_b = st.columns([4, 2, 1])
+                with col_n:
+                    if st.session_state.select_mode:
+                        st.checkbox(f"🎬 {sname}", key=f"chk_{sname}")
+                    else:
+                        st.markdown(f"<div style='padding-top:10px; font-weight:700; font-size:14px; color:{FG};'>🎬 {sname}</div>", unsafe_allow_html=True)
+                with col_d:
+                    st.markdown(f"<div style='padding-top:12px; font-size:12px; color:{SUB};'>{ts}</div>", unsafe_allow_html=True)
+                with col_b:
+                    if not st.session_state.select_mode:
+                        if st.button("OPEN", key=f"list_{sname}", use_container_width=True):
+                            st.session_state.script = sname
+                            st.session_state.page = "app"
+                            st.rerun()
+                st.markdown(f"<hr style='border-top:1px solid {BRD}; margin: 8px 0;'>", unsafe_allow_html=True)
+    except Exception as e:
+        st.error(f"DATABASE CONNECTION ERROR IN DASHBOARD: {str(e)}")
 
 # ─────────────────────────────────────────────────────────────────────────────
 # MAIN APP (EDITOR)
@@ -1079,6 +1108,13 @@ def page_settings():
 # ─────────────────────────────────────────────────────────────────────────────
 def main():
     st.set_page_config(page_title="Ink Play", page_icon="🎬", layout="wide", initial_sidebar_state="collapsed")
+    
+    try:
+        init_db()
+    except Exception as e:
+        st.error(f"FATAL CLOUD DATABASE ERROR ON STARTUP: {str(e)}")
+        return
+        
     init_session()
     global_css(st.session_state.dark_mode)
 
